@@ -1,3 +1,7 @@
-const {PORT} = process.env;
+const {PORT, CONNECTION_URL, JWT_SECRET} = process.env;
 
-module.exports = {port: PORT};
+module.exports = {
+    port: PORT,
+    connectionUrl: CONNECTION_URL,
+    jwtSecret: JWT_SECRET
+};
