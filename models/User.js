@@ -48,6 +48,12 @@ const userSchema = new Schema({
             ref: 'Post',
         },
     ],
+    verificationCode: String,
+    isVerified: {
+        type: Boolean,
+        default: false
+    }
+
 }, { 
     timestamps: true
 });

@@ -45,6 +45,14 @@
         .withMessage(`Password length must be greater than 6`) 
         .notEmpty()
         .withMessage(`Password is required`),
+    ];
+
+    const emailValidator = [
+        check(`email`)
+        .isEmail()
+        .withMessage(`Invalid Email`)
+        .notEmpty()
+        .withMessage(`Email is required`),
     ]
 
-    module.exports = { signupValidation, signinValidator }
+    module.exports = { signupValidation, signinValidator, emailValidator }
