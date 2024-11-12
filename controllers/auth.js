@@ -115,6 +115,69 @@ const verifyCode = async (req, res, next) => {
     }catch(error) {
         next(error)
     }
+};
+
+// verify user controller
+const verifyUser = async (req, res, next) => {
+    try {
+        const { email, code } = req.body;
+
+        const user = await User.findOne({ email });
+        if(!user) {
+            res.code = 404;
+            throw new Error(`User Not Found`)
+        }
+
+        if(user.verificationCode !== code) {
+            res.code = 400;
+            throw new Error(`Invalid Verification Code`)
+        }
+
+        user.isVerified = true;
+        user.verificationCode = null
+        await user.save();
+
+        res.status(200).json({
+            code: 200,
+            status: true,
+            message: `User Verified Successfully`
+        });
+    }catch(error) {
+        next(error)
+    }
+};
+
+// forgot password controller
+const forgotPasswordCode =  async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        const user = await User.findOne({ email });
+        if(!user) {
+            res.code = 404;
+            throw new Error(`User Not Found`)
+        }
+
+        const code = generateCode(6);
+
+        user.forgotPasswordCode = code;
+        await user.save();
+
+        await sendEmail({
+            emailTo: user.email,
+            subject: `Forgot Password Code`,
+            code,
+            content: `change your password`
+        });
+
+        res.status(200).json({
+            code: 200, 
+            status: true, 
+            message: `Forgot Password Code Sent Successfully`
+        });
+    }catch(error){
+        next(error)
+    }
 }
 
-module.exports = { signup, signin, verifyCode }
+module.exports = { signup, signin, verifyCode, verifyUser, forgotPasswordCode }

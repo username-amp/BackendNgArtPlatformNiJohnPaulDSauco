@@ -49,11 +49,12 @@ const userSchema = new Schema({
         },
     ],
     verificationCode: String,
+    forgotPasswordCode: String,
     isVerified: {
         type: Boolean,
         default: false
-    }
-
+    },
+    
 }, { 
     timestamps: true
 });

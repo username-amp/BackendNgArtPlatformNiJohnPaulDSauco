@@ -53,6 +53,23 @@
         .withMessage(`Invalid Email`)
         .notEmpty()
         .withMessage(`Email is required`),
+    ];
+
+    const verifyUserValidator = [
+        check(`email`)
+        .isEmail()
+        .withMessage(`Invalid Email`)
+        .notEmpty()
+        .withMessage(`Email is required`),
+
+        check(`code`)
+        .notEmpty().
+        withMessage(`Code is required`)
     ]
 
-    module.exports = { signupValidation, signinValidator, emailValidator }
+    module.exports = { 
+        signupValidation, 
+        signinValidator, 
+        emailValidator, 
+        verifyUserValidator 
+    }
