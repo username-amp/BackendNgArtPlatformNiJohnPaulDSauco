@@ -178,6 +178,43 @@ const forgotPasswordCode =  async (req, res, next) => {
     }catch(error){
         next(error)
     }
+};
+
+const recoverPassword = async (req, res, next) => {
+    try {
+        const { email, code, password } = req.body;
+
+        const user = await User.findOne({ email });
+        if(!user) {
+            res.code = 404;
+            throw new Error(`User Not Found`)
+        }
+
+        if(user.forgotPasswordCode !== code) {
+            res.code = 400;
+            throw new Error(`Invalid Forgot Password Code`)
+        }
+
+        const hashedPassword = await hashPassword(password);
+        user.password = hashedPassword;
+        user.forgotPasswordCode = null;
+        await user.save();
+
+        res.status(200).json({
+            code: 200, 
+            status: true, 
+            message: `Password Recovered Successfully`
+        });
+    }catch(error) {
+        next(error)
+    }
 }
 
-module.exports = { signup, signin, verifyCode, verifyUser, forgotPasswordCode }
+module.exports = { 
+    signup, 
+    signin, 
+    verifyCode, 
+    verifyUser, 
+    forgotPasswordCode,
+    recoverPassword,
+}
