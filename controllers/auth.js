@@ -180,6 +180,7 @@ const forgotPasswordCode =  async (req, res, next) => {
     }
 };
 
+// recover password controller
 const recoverPassword = async (req, res, next) => {
     try {
         const { email, code, password } = req.body;
@@ -208,7 +209,48 @@ const recoverPassword = async (req, res, next) => {
     }catch(error) {
         next(error)
     }
-}
+};
+
+// change password controller
+const changePassword = async (req, res, next) => {
+    try {
+        const {oldPassword, newPassword} = req.body
+        const {_id} = req.user
+
+        const user = await User.findById(_id)
+        if(!user) {
+            res.code = 404;
+            throw new Error(`User Not Found`)
+        }
+
+        const match = await comparePassword(oldPassword, user.password)
+        if(!match) {
+            res.code = 400;
+            throw new Error(`Old Password does not match`)
+        } 
+
+        if(oldPassword === newPassword) {
+            res.code = 400;
+            throw new Error(`You are providing the old password`)
+        }
+
+        const hashedPassword = await hashPassword(newPassword);
+        user.password = hashedPassword
+        await user.save()
+        
+        res.status(200).json({
+            code: 200,
+            status: true,
+            message: `Password Changed Successfully`
+        })
+
+        res.json(
+            req.user
+        );
+    }catch(error) {
+        next(error)
+    }
+};
 
 module.exports = { 
     signup, 
@@ -217,4 +259,5 @@ module.exports = {
     verifyUser, 
     forgotPasswordCode,
     recoverPassword,
+    changePassword,
 }

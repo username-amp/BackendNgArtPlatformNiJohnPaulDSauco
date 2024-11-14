@@ -83,6 +83,16 @@
         .withMessage(`Password length must be greater than 6`) 
         .notEmpty()
         .withMessage(`Password is required`),
+    ];
+
+    const changePasswordValidator = [
+        check(`oldPassword`)
+        .notEmpty()
+        .withMessage(`Old Password is required`),
+
+        check(`newPassword`)
+        .notEmpty()
+        .withMessage(`Password is required`),
     ]
 
     module.exports = { 
@@ -90,5 +100,6 @@
         signinValidator, 
         emailValidator, 
         verifyUserValidator,
-        recoverPasswordValidator
+        recoverPasswordValidator,
+        changePasswordValidator
     }

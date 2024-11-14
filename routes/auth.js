@@ -7,8 +7,11 @@ const {
     emailValidator,
     verifyUserValidator,
     recoverPasswordValidator,
+    changePasswordValidator,
 } = require(`../validators/auth`)
 const validate = require(`../validators/validate`)
+const isAuth = require(`../middleware/isAuth`)
+
 
 router.post(`/signup`,signupValidation,validate, authController.signup)
 
@@ -21,5 +24,7 @@ router.post(`/verify-user`, verifyUserValidator,validate, authController.verifyU
 router.post(`/forgot-password-code`,emailValidator, validate,authController.forgotPasswordCode)
 
 router.post(`/recover-password`,recoverPasswordValidator,validate, authController.recoverPassword)
+
+router.put(`/change-password`,changePasswordValidator,validate, isAuth, authController.changePassword)
 
 module.exports = router
