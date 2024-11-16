@@ -8,6 +8,7 @@ const {
     verifyUserValidator,
     recoverPasswordValidator,
     changePasswordValidator,
+    updateProfileValidator
 } = require(`../validators/auth`)
 const validate = require(`../validators/validate`)
 const isAuth = require(`../middleware/isAuth`)
@@ -26,5 +27,7 @@ router.post(`/forgot-password-code`,emailValidator, validate,authController.forg
 router.post(`/recover-password`,recoverPasswordValidator,validate, authController.recoverPassword)
 
 router.put(`/change-password`,changePasswordValidator,validate, isAuth, authController.changePassword)
+
+router.put(`/update-profile`,isAuth, updateProfileValidator ,validate, authController.updateProfile)
 
 module.exports = router

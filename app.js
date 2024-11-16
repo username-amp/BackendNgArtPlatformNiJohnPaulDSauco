@@ -1,28 +1,25 @@
-const express = require(`express`)
-const bodyParser = require(`body-parser`)
-const dotenv = require(`dotenv`) 
-const morgan = require(`morgan`)
-dotenv.config()
-const connectMongodb = require(`./init/mongodb`)
-const { authRoute } = require(`./routes`)
-const { errorHandler } = require(`./middleware/`)
-const notfound = require('./controllers/notfound');
+const express = require(`express`);
+const bodyParser = require(`body-parser`);
+const dotenv = require(`dotenv`);
+const morgan = require(`morgan`);
+dotenv.config();
+const connectMongodb = require(`./init/mongodb`);
+const { authRoute } = require(`./routes`);
+const { errorHandler } = require(`./middleware/`);
+const notfound = require("./controllers/notfound");
 
+const app = express();
 
-const app = express()
+connectMongodb();
 
-connectMongodb()
+app.use(express.json({ limit: `500mb` }));
+app.use(bodyParser.urlencoded({ limit: `500mb`, extended: true }));
+app.use(morgan(`dev`));
 
-app.use(express.json({ limit: `500mb` }))
-app.use(bodyParser.urlencoded({ limit: `500mb`, extended: true}))
-app.use(morgan(`dev`))
+app.use(`/api/v2/auth`, authRoute);
 
+app.use(`*`, notfound);
 
-app.use(`/api/v2/auth`, authRoute)
+app.use(errorHandler);
 
-app.use(`*`, notfound)
-
-app.use(errorHandler)
-
-
-module.exports = app
+module.exports = app;
