@@ -6,6 +6,7 @@ const generateCode = require(`../utils/generateCode`);
 const sendEmail = require(`../utils/sendEmail`);
 // signup controller
 const signup = async (req, res, next) => {
+  console.log(req.body);
   try {
     const {
       username,

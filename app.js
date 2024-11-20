@@ -6,9 +6,13 @@ const morgan = require("morgan");
 dotenv.config();
 
 const connectMongodb = require("./init/mongodb");
-const { authRoute } = require("./routes");
-const { categoryRoute } = require("./routes");
-const { postRoute } = require("./routes");
+const {
+  authRoute,
+  categoryRoute,
+  postRoute,
+  interactionsRoute,
+  notificationsRoute,
+} = require("./routes");
 const { errorHandler } = require("./middleware/");
 const notfound = require("./controllers/notfound");
 
@@ -26,6 +30,8 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/v2/auth", authRoute);
 app.use("/api/v2/category", categoryRoute);
 app.use("/api/v2/post", postRoute);
+app.use("/api/v2/interactions", interactionsRoute);
+app.use(`/api/v2/notifications`, notificationsRoute);
 
 app.use("*", notfound);
 
