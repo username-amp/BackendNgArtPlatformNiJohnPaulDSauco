@@ -65,18 +65,25 @@ const commentPost = async (req, res) => {
   }
 };
 
-const savePost = async (req, res) => {
-  const { postId, userId } = req.body;
-
+const savePost = async (req, res, next) => {
   try {
-    const post = await Post.findById(postId);
+    const { userId, postId } = req.body;
+
+    if (!userId || !postId) {
+      return res
+        .status(400)
+        .json({ message: "Both userId and postId are required" });
+    }
+
     const user = await User.findById(userId);
-    if (!post) return res.status(404).json({ message: "Post not found" });
+    const post = await Post.findById(postId);
+
     if (!user) return res.status(404).json({ message: "User not found" });
+    if (!post) return res.status(404).json({ message: "Post not found" });
 
     await User.findByIdAndUpdate(
       userId,
-      { $addToSet: { save_posts: postId } },
+      { $addToSet: { savedPosts: postId } },
       { new: true }
     );
 
@@ -94,8 +101,8 @@ const savePost = async (req, res) => {
       notification,
     });
   } catch (error) {
-    console.error("Error in save route:", error);
-    res.status(500).json({ message: "An error occurred" });
+    console.error("Error in savePost:", error.message);
+    next(error);
   }
 };
 

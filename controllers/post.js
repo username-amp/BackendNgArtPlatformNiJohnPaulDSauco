@@ -124,4 +124,64 @@ const deletePost = async (req, res, next) => {
   }
 };
 
-module.exports = { createPost, getAllPosts, updatePost, deletePost };
+const removeSavedPost = async (req, res, next) => {
+  const { userId, postId } = req.body;
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.savedPosts = user.savedPosts || [];
+
+    if (!user.savedPosts.includes(postId)) {
+      return res.status(400).json({ message: "Post not in saved posts" });
+    }
+
+    await User.findByIdAndUpdate(
+      userId,
+      { $pull: { savedPosts: postId } },
+      { new: true }
+    );
+
+    const updatedUser = await User.findById(userId).populate("savedPosts");
+
+    res.status(200).json({
+      message: "Post removed from saved successfully",
+      savedPosts: updatedUser.savedPosts,
+    });
+  } catch (error) {
+    console.error("Error in removeSavedPost:", error.message);
+    next(error);
+  }
+};
+
+const getSavedPosts = async (req, res, next) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findById(userId).populate("savedPosts");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      message: "Saved posts fetched successfully",
+      savedPosts: user.savedPosts,
+    });
+  } catch (error) {
+    console.error("Error fetching saved posts:", error.message);
+    next(error);
+  }
+};
+
+module.exports = {
+  createPost,
+  getAllPosts,
+  updatePost,
+  deletePost,
+  getSavedPosts,
+  removeSavedPost,
+};

@@ -7,6 +7,7 @@ const userSchema = new Schema(
       type: String,
       required: true,
       unique: true,
+      trim: true,
     },
     email: {
       type: String,
@@ -30,6 +31,7 @@ const userSchema = new Schema(
     bio: {
       type: String,
       default: "",
+      maxlength: 500,
     },
     followers: [
       {
@@ -43,14 +45,20 @@ const userSchema = new Schema(
         ref: "User",
       },
     ],
-    save_posts: [
+    savedPosts: [
       {
         type: Types.ObjectId,
         ref: "Post",
       },
     ],
-    verificationCode: String,
-    forgotPasswordCode: String,
+    verificationCode: {
+      type: String,
+      default: null,
+    },
+    forgotPasswordCode: {
+      type: String,
+      default: null,
+    },
     isVerified: {
       type: Boolean,
       default: false,
@@ -61,6 +69,4 @@ const userSchema = new Schema(
   }
 );
 
-const User = mongoose.model("User", userSchema);
-
-module.exports = User;
+module.exports = mongoose.model("User", userSchema);

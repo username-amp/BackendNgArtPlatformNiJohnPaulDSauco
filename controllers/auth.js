@@ -4,7 +4,7 @@ const comparePassword = require(`../utils/comparePassword`);
 const generateToken = require(`../utils/generateToken`);
 const generateCode = require(`../utils/generateCode`);
 const sendEmail = require(`../utils/sendEmail`);
-// signup controller
+
 const signup = async (req, res, next) => {
   console.log(req.body);
   try {
@@ -50,7 +50,6 @@ const signup = async (req, res, next) => {
   }
 };
 
-// sign in controller
 const signin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -79,7 +78,6 @@ const signin = async (req, res, next) => {
   }
 };
 
-// verify code controller
 const verifyCode = async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -119,7 +117,6 @@ const verifyCode = async (req, res, next) => {
   }
 };
 
-// verify user controller
 const verifyUser = async (req, res, next) => {
   try {
     const { email, code } = req.body;
@@ -149,7 +146,6 @@ const verifyUser = async (req, res, next) => {
   }
 };
 
-// forgot password controller
 const forgotPasswordCode = async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -182,7 +178,6 @@ const forgotPasswordCode = async (req, res, next) => {
   }
 };
 
-// recover password controller
 const recoverPassword = async (req, res, next) => {
   try {
     const { email, code, password } = req.body;
@@ -213,7 +208,6 @@ const recoverPassword = async (req, res, next) => {
   }
 };
 
-// change password controller
 const changePassword = async (req, res, next) => {
   try {
     const { oldPassword, newPassword } = req.body;
@@ -252,7 +246,6 @@ const changePassword = async (req, res, next) => {
   }
 };
 
-// update profile controller
 const updateProfile = async (req, res, next) => {
   try {
     const { _id } = req.user;
