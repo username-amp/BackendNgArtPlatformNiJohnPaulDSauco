@@ -1,32 +1,23 @@
-const jwt = require(`jsonwebtoken`);
-const { jwtSecret } = require(`../config/keys`);
-const isAuth = async (req, res, next) => {
+const jwt = require("jsonwebtoken");
+const { jwtSecret } = require("../config/keys");
+
+const isAuth = (req, res, next) => {
   try {
-    const authorization = req.headers.authorization
-      ? req.headers.authorization.split(` `)
-      : [];
-    const token = authorization.length > 1 ? authorization[1] : null;
+    const token = req.cookies.token;
 
-    if (token) {
-      const payload = jwt.verify(token, jwtSecret);
-
-      if (payload) {
-        req.user = {
-          _id: payload._id,
-          username: payload.username,
-          email: payload.email,
-        };
-        next();
-      } else {
-        res.code = 401;
-        throw new Error(`Unauthorized`);
-      }
-    } else {
-      res.code = 400;
-      throw new Error(`Token is required`);
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: No token provided" });
     }
+
+    const payload = jwt.verify(token, jwtSecret);
+    req.user = payload;
+
+    next();
   } catch (error) {
-    next(error);
+    console.error(error);
+    res.status(401).json({ message: "Unauthorized: Invalid token" });
   }
 };
 

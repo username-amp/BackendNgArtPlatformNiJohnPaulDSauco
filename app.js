@@ -3,6 +3,9 @@ const path = require("path");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 const morgan = require("morgan");
+const cors = require("cors"); // Import cors middleware
+const cookieParser = require("cookie-parser");
+
 dotenv.config();
 
 const connectMongodb = require("./init/mongodb");
@@ -19,6 +22,16 @@ const notfound = require("./controllers/notfound");
 const app = express();
 
 connectMongodb();
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
+app.use(cookieParser());
 
 app.use(express.json({ limit: "500mb" }));
 app.use(bodyParser.urlencoded({ limit: "500mb", extended: true }));

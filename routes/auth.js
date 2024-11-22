@@ -47,9 +47,9 @@ router.post(
 
 router.put(
   `/change-password`,
+  isAuth,
   changePasswordValidator,
   validate,
-  isAuth,
   authController.changePassword
 );
 

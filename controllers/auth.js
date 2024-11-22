@@ -54,6 +54,7 @@ const signin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
+
     if (!user) {
       res.code = 401;
       throw new Error(`Invalid Credentials`);
@@ -66,12 +67,19 @@ const signin = async (req, res, next) => {
     }
 
     const token = generateToken(user);
-    res.cookie("token", token, { httpOnly: true, secure: true });
+
+    const isProduction = process.env.NODE_ENV === "production";
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: isProduction,
+      maxAge: 3600000,
+      sameSite: "Strict",
+    });
+
     res.status(200).json({
       code: 200,
       status: true,
-      message: `User logged in Successfully`,
-      //  data: { token }
+      message: `User logged in successfully`,
     });
   } catch (error) {
     next(error);
@@ -106,7 +114,6 @@ const verifyCode = async (req, res, next) => {
       content: `Verify your account`,
     });
 
-    // send email
     res.status(200).json({
       code: 200,
       status: true,
@@ -121,25 +128,39 @@ const verifyUser = async (req, res, next) => {
   try {
     const { email, code } = req.body;
 
+    if (!email || !code) {
+      return res.status(400).json({
+        code: 400,
+        status: false,
+        message: "Email and verification code are required.",
+      });
+    }
+
     const user = await User.findOne({ email });
     if (!user) {
-      res.code = 404;
-      throw new Error(`User Not Found`);
+      return res.status(404).json({
+        code: 404,
+        status: false,
+        message: "User not found.",
+      });
     }
 
     if (user.verificationCode !== code) {
-      res.code = 400;
-      throw new Error(`Invalid Verification Code`);
+      return res.status(400).json({
+        code: 400,
+        status: false,
+        message: "Invalid verification code.",
+      });
     }
 
     user.isVerified = true;
     user.verificationCode = null;
     await user.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       code: 200,
       status: true,
-      message: `User Verified Successfully`,
+      message: "User verified successfully!",
     });
   } catch (error) {
     next(error);
@@ -215,19 +236,18 @@ const changePassword = async (req, res, next) => {
 
     const user = await User.findById(_id);
     if (!user) {
-      res.code = 404;
-      throw new Error(`User Not Found`);
+      return res.status(404).json({ message: "User Not Found" });
     }
 
     const match = await comparePassword(oldPassword, user.password);
     if (!match) {
-      res.code = 400;
-      throw new Error(`Old Password does not match`);
+      return res.status(400).json({ message: "Old Password does not match" });
     }
 
     if (oldPassword === newPassword) {
-      res.code = 400;
-      throw new Error(`You are providing the old password`);
+      return res
+        .status(400)
+        .json({ message: "You are providing the old password" });
     }
 
     const hashedPassword = await hashPassword(newPassword);
@@ -237,11 +257,10 @@ const changePassword = async (req, res, next) => {
     res.status(200).json({
       code: 200,
       status: true,
-      message: `Password Changed Successfully`,
+      message: "Password Changed Successfully",
     });
-
-    res.json(req.user);
   } catch (error) {
+    console.error(error);
     next(error);
   }
 };
