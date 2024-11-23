@@ -13,6 +13,7 @@
   "author": "Richard Ramos Jr",
   "license": "ISC",
   "dependencies": {
+    "axios-cookiejar-support": "^5.0.3",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
     "cookie-parser": "^1.4.7",

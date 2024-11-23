@@ -56,35 +56,36 @@ const signin = async (req, res, next) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      res.code = 401;
-      throw new Error(`Invalid Credentials`);
+      return res.status(401).json({ message: "Invalid Credentials" });
     }
 
     const match = await comparePassword(password, user.password);
     if (!match) {
-      res.code = 401;
-      throw new Error(`Invalid Credentials`);
+      return res.status(401).json({ message: "Invalid Credentials" });
     }
 
+    
     const token = generateToken(user);
 
-    const isProduction = process.env.NODE_ENV === "production";
+    
+  
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: isProduction,
-      maxAge: 3600000,
-      sameSite: "Strict",
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production", 
+      maxAge: 4800000, 
+      sameSite: "Strict", 
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       code: 200,
       status: true,
-      message: `User logged in successfully`,
+      message: "User logged in successfully",
     });
   } catch (error) {
     next(error);
   }
 };
+
 
 const verifyCode = async (req, res, next) => {
   try {
