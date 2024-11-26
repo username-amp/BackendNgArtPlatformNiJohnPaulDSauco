@@ -44,6 +44,8 @@ const createPost = async (req, res, next) => {
 
     await post.save();
 
+    
+
     res.status(201).json({
       code: 201,
       status: true,
@@ -67,6 +69,19 @@ const getAllPosts = async (req, res) => {
     res
       .status(500)
       .json({ message: "Failed to fetch posts", error: error.message });
+  }
+};
+
+const getPostById = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    res.status(200).json(post);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -180,6 +195,7 @@ const getSavedPosts = async (req, res, next) => {
 module.exports = {
   createPost,
   getAllPosts,
+  getPostById,
   updatePost,
   deletePost,
   getSavedPosts,

@@ -31,4 +31,12 @@ router.post(
   interactionsController.savePost
 );
 
+router.post(
+  "/unlike",
+  isAuth,
+  validateLike,
+  validate,
+  interactionsController.unlikePost
+);
+
 module.exports = router;

@@ -18,6 +18,18 @@ router.post(
 
 router.get("/get-post", isAuth, postController.getAllPosts);
 
+router.get(
+  "/get-post/:postId",
+  isAuth,
+  [
+    check(`postId`)
+      .isMongoId()
+      .withMessage(`Post ID must be a valid MongoDB ObjectId`),
+  ],
+  validate,
+  postController.getPostById
+);
+
 router.put(
   "/update-post/:postId",
   isAuth,

@@ -1,32 +1,91 @@
 const Notification = require("../models/Notifications");
+const mongoose = require("mongoose");
 const Post = require("../models/Post");
 const User = require("../models/User");
 
 const likePost = async (req, res) => {
-  const { postId, authorId, recipientId } = req.body;
-
   try {
+    const { authorId, recipientId, postId } = req.body;
+
+    if (
+      ![authorId, recipientId, postId].every(mongoose.Types.ObjectId.isValid)
+    ) {
+      return res.status(400).json({
+        error: "Invalid ID format. Ensure IDs are valid MongoDB ObjectIds.",
+      });
+    }
+
     const post = await Post.findById(postId);
-    if (!post) return res.status(404).json({ message: "Post not found" });
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
 
-    await Post.findByIdAndUpdate(postId, { $inc: { likes_count: 1 } });
+    post.likes.push({ user_id: recipientId });
+    post.likes_count += 1;
+    await post.save();
 
-    const notification = new Notification({
-      recipient: recipientId,
-      author: authorId,
+    await Notification.create({
+      recipient: authorId,
+      author: recipientId,
       type: "like",
       post: postId,
     });
 
-    await notification.save();
-
     res.status(200).json({
-      message: "Post liked and notification created successfully",
-      notification,
+      message: "Post liked successfully.",
+      likes_count: post.likes_count,
     });
   } catch (error) {
-    console.error("Error in like route:", error);
-    res.status(500).json({ message: "An error occurred" });
+    console.error("Error liking post:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while processing the request." });
+  }
+};
+
+const unlikePost = async (req, res) => {
+  try {
+    const { authorId, recipientId, postId } = req.body;
+
+    if (
+      ![authorId, recipientId, postId].every(mongoose.Types.ObjectId.isValid)
+    ) {
+      return res.status(400).json({
+        error: "Invalid ID format. Ensure IDs are valid MongoDB ObjectIds.",
+      });
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    const notification = await Notification.findOneAndDelete({
+      recipient: authorId,
+      author: recipientId,
+      type: "like",
+      post: postId,
+    });
+
+    if (!notification) {
+      console.log("No like notification found to delete.");
+    }
+
+    post.likes = post.likes.filter(
+      (like) => like.user_id.toString() !== recipientId
+    );
+    post.likes_count -= 1;
+    await post.save();
+
+    res.status(200).json({
+      message: "Post unliked successfully.",
+      likes_count: post.likes_count,
+    });
+  } catch (error) {
+    console.error("Error unliking post:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while processing the request." });
   }
 };
 
@@ -106,4 +165,4 @@ const savePost = async (req, res, next) => {
   }
 };
 
-module.exports = { likePost, commentPost, savePost };
+module.exports = { likePost, commentPost, savePost, unlikePost };
