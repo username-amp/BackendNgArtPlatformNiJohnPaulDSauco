@@ -90,7 +90,9 @@ const unlikePost = async (req, res) => {
 };
 
 const commentPost = async (req, res) => {
-  const { postId, authorId, recipientId, commentContent } = req.body;
+  const { postId, commentContent } = req.body;
+  const authorId = req.user._id;
+  const recipientId = req.body.recipientId;
 
   try {
     const post = await Post.findById(postId);
@@ -105,6 +107,9 @@ const commentPost = async (req, res) => {
       { new: true }
     );
 
+    const author = await User.findById(authorId);
+    const recipient = recipientId ? await User.findById(recipientId) : null;
+
     const notification = new Notification({
       recipient: recipientId,
       author: authorId,
@@ -116,7 +121,11 @@ const commentPost = async (req, res) => {
 
     res.status(200).json({
       message: "Comment added and notification created successfully",
-      notification,
+      notification: {
+        ...notification.toObject(),
+        authorUsername: author.username,
+        recipientUsername: recipient ? recipient.username : null,
+      },
     });
   } catch (error) {
     console.error("Error in comment route:", error);
@@ -126,7 +135,8 @@ const commentPost = async (req, res) => {
 
 const savePost = async (req, res, next) => {
   try {
-    const { userId, postId } = req.body;
+    const { postId } = req.body;
+    const userId = req.user._id;
 
     if (!userId || !postId) {
       return res
@@ -140,11 +150,19 @@ const savePost = async (req, res, next) => {
     if (!user) return res.status(404).json({ message: "User not found" });
     if (!post) return res.status(404).json({ message: "Post not found" });
 
+    if (userId === post.author_id) {
+      return res.status(400).json({ message: "Cannot save your own post" });
+    }
+
     await User.findByIdAndUpdate(
       userId,
       { $addToSet: { savedPosts: postId } },
       { new: true }
     );
+
+    const updatedUser = await User.findById(userId);
+    console.log(updatedUser.savedPosts); 
+
 
     const notification = new Notification({
       recipient: post.author_id,
@@ -165,4 +183,34 @@ const savePost = async (req, res, next) => {
   }
 };
 
-module.exports = { likePost, commentPost, savePost, unlikePost };
+
+const getComments = async (req, res) => {
+  const { postId } = req.params;
+
+  try {
+    const post = await Post.findById(postId).populate({
+      path: "comments.user_id",
+      select: "username",
+    });
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const populatedComments = post.comments.map((comment) => ({
+      ...comment._doc,
+      authorUsername: comment.user_id?.username || "Unknown",
+    }));
+
+    res.status(200).json({
+      comments: populatedComments,
+    });
+  } catch (error) {
+    console.error("Error fetching comments:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while fetching comments." });
+  }
+};
+
+module.exports = { getComments, likePost, commentPost, savePost, unlikePost };

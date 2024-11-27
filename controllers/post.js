@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Post = require("../models/Post");
 const Category = require("../models/Category");
 const User = require("../models/User");
+const Notification = require("../models/Notifications");
 
 const createPost = async (req, res, next) => {
   try {
@@ -141,36 +142,58 @@ const deletePost = async (req, res, next) => {
 
 const removeSavedPost = async (req, res, next) => {
   const { userId, postId } = req.body;
+
   try {
+
     const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+
     user.savedPosts = user.savedPosts || [];
 
-    if (!user.savedPosts.includes(postId)) {
-      return res.status(400).json({ message: "Post not in saved posts" });
-    }
+   
 
-    await User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       userId,
       { $pull: { savedPosts: postId } },
       { new: true }
     );
 
-    const updatedUser = await User.findById(userId).populate("savedPosts");
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const notification = await Notification.findOne({
+      recipient: post.author_id,
+      author: userId,
+      type: "save",
+      post: postId,
+    });
+
+    if (notification) {
+      await notification.deleteOne();
+      console.log("Notification deleted");
+    }
+
+    const populatedUser = await User.findById(userId).populate("savedPosts");
 
     res.status(200).json({
-      message: "Post removed from saved successfully",
-      savedPosts: updatedUser.savedPosts,
+      message: "Post removed from saved successfully, and notification deleted",
+      savedPosts: populatedUser.savedPosts,
     });
   } catch (error) {
     console.error("Error in removeSavedPost:", error.message);
     next(error);
   }
 };
+
+
+
+
 
 const getSavedPosts = async (req, res, next) => {
   const { userId } = req.params;

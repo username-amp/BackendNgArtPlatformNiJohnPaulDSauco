@@ -39,4 +39,6 @@ router.post(
   interactionsController.unlikePost
 );
 
+router.get("/comments/:postId", isAuth, interactionsController.getComments);
+
 module.exports = router;
