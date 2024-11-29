@@ -54,7 +54,7 @@ const userSchema = new Schema(
     verificationCode: {
       type: String,
       default: null,
-    },
+    }, 
     forgotPasswordCode: {
       type: String,
       default: null,

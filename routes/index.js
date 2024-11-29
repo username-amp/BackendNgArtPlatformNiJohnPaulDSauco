@@ -3,6 +3,7 @@ const categoryRoute = require("./category");
 const postRoute = require("./post");
 const interactionsRoute = require("./interactions");
 const notificationsRoute = require("./notifications");
+const userRoute = require("./user");
 
 module.exports = {
   authRoute,
@@ -10,4 +11,5 @@ module.exports = {
   postRoute,
   interactionsRoute,
   notificationsRoute,
+  userRoute,
 };

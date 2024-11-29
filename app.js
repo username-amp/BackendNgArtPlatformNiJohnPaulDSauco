@@ -3,9 +3,8 @@ const path = require("path");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 const morgan = require("morgan");
-const cors = require("cors"); 
+const cors = require("cors");
 const cookieParser = require("cookie-parser");
-
 
 dotenv.config();
 
@@ -16,6 +15,7 @@ const {
   postRoute,
   interactionsRoute,
   notificationsRoute,
+  userRoute,
 } = require("./routes");
 const { errorHandler } = require("./middleware/");
 const notfound = require("./controllers/notfound");
@@ -46,6 +46,7 @@ app.use("/api/v2/category", categoryRoute);
 app.use("/api/v2/post", postRoute);
 app.use("/api/v2/interactions", interactionsRoute);
 app.use(`/api/v2/notifications`, notificationsRoute);
+app.use("/api/v2/users", userRoute);
 
 app.use("*", notfound);
 

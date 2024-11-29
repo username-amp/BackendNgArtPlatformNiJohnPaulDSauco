@@ -3,6 +3,7 @@ const categoryController = require(`./category`);
 const postController = require(`./post`);
 const interactionsController = require(`./interactions`);
 const notificationsController = require(`./notifications`);
+const userController = require(`./user`);
 
 module.exports = {
   authController,
@@ -10,4 +11,5 @@ module.exports = {
   postController,
   interactionsController,
   notificationsController,
+  userController,
 };
