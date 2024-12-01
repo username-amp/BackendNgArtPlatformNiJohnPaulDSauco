@@ -266,6 +266,29 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+
+const getProfile = async (req, res, next) => {
+  try {
+    const { _id } = req.user;
+
+    const user = await User.findById(_id).select(
+      "-password -verificationCode -forgotPasswordCode"
+    );
+
+    if (!user) {
+      return res.status(404).json({ code: 404, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      code: 200,
+      status: true,
+      user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const updateProfile = async (req, res, next) => {
   try {
     const { _id } = req.user;
@@ -324,4 +347,5 @@ module.exports = {
   recoverPassword,
   changePassword,
   updateProfile,
+  getProfile,
 };

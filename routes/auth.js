@@ -53,6 +53,8 @@ router.put(
   authController.changePassword
 );
 
+router.get(`/profile`, isAuth, authController.getProfile);
+
 router.put(
   `/update-profile`,
   isAuth,

@@ -66,4 +66,6 @@ router.get(
   postController.getSavedPosts
 );
 
+router.get(`/related-posts/:categoryId`, isAuth, postController.getRelatedPosts);
+
 module.exports = router;

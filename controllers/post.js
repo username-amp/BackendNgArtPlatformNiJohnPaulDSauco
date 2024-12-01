@@ -219,6 +219,38 @@ const getSavedPosts = async (req, res, next) => {
   }
 };
 
+
+const getRelatedPosts = async (req, res) => {
+  const { categoryId } = req.params;
+
+  try {
+    if (!categoryId) {
+      return res.status(400).json({ message: "Category ID is required" });
+    }
+
+    const relatedPosts = await Post.find({ category: categoryId })
+      .populate("author_id", "username profile_picture")
+      .populate("category", "title")
+      .limit(5)
+      .sort({ createdAt: -1 });
+
+    if (relatedPosts.length === 0) {
+      return res.status(404).json({ message: "No related posts found" });
+    }
+
+    res.status(200).json({
+      message: "Related posts fetched successfully",
+      relatedPosts,
+    });
+  } catch (error) {
+    console.error("Error fetching related posts:", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+
+
 module.exports = {
   createPost,
   getAllPosts,
@@ -227,4 +259,5 @@ module.exports = {
   deletePost,
   getSavedPosts,
   removeSavedPost,
+  getRelatedPosts,
 };
