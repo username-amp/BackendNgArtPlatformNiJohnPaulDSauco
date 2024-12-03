@@ -6,10 +6,10 @@ const { validateFollowRequest } = require("../validators/user");
 
 const router = express.Router();
 
-router.post("/follow/:id", validateFollowRequest, userController.followUser);
+router.post("/follow/:_id", validateFollowRequest, userController.followUser);
 
 
-router.post("/unfollow/:id", validateFollowRequest, userController.unfollowUser);
+router.post("/unfollow/:_id", validateFollowRequest, userController.unfollowUser);
 
 
 router.get("/:id/followers", userController.getFollowers);

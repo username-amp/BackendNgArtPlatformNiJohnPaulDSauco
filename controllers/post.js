@@ -203,7 +203,13 @@ const getSavedPosts = async (req, res, next) => {
   const { userId } = req.params;
 
   try {
-    const user = await User.findById(userId).populate("savedPosts");
+    const user = await User.findById(userId).populate({
+      path: "savedPosts",
+      populate: {
+        path: "author_id",
+        select: "username",
+      },
+    });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -218,6 +224,7 @@ const getSavedPosts = async (req, res, next) => {
     next(error);
   }
 };
+
 
 
 const getRelatedPosts = async (req, res) => {
@@ -248,6 +255,81 @@ const getRelatedPosts = async (req, res) => {
   }
 };
 
+const getUserPostsCount = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid User ID format" });
+    }
+
+    const user = await User.findById(userId).select("username profile_picture");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const posts = await Post.find({ author_id: userId }).populate(
+      "category",
+      "title"
+    );
+
+    const postCount = posts.length;
+
+    res.status(200).json({
+      code: 200,
+      status: true,
+      user: {
+        username: user.username,
+        profile_picture: user.profile_picture,
+      },
+      posts,
+      postCount,
+    });
+  } catch (error) {
+    console.error("Error fetching user posts:", error.message);
+    res.status(500).json({
+      code: 500,
+      status: false,
+      message: "Failed to fetch user posts",
+      error: error.message,
+    });
+  }
+};
+
+
+const getAllPostsOfUserByUserId = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid User ID format" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const posts = await Post.find({ author_id: userId })
+      .populate("category", "title")
+      .populate("author_id", "username profile_picture");
+
+    res.status(200).json({
+      code: 200,
+      status: true,
+      posts,
+    });
+  } catch (error) {
+    console.error("Error fetching posts by user:", error.message);
+    res.status(500).json({
+      code: 500,
+      status: false,
+      message: "Failed to fetch posts by user",
+      error: error.message,
+    });
+  }
+};
+
 
 
 
@@ -260,4 +342,6 @@ module.exports = {
   getSavedPosts,
   removeSavedPost,
   getRelatedPosts,
+  getUserPostsCount,
+  getAllPostsOfUserByUserId
 };

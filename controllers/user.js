@@ -1,15 +1,15 @@
 const User = require("../models/User");
 
 const followUser = async (req, res) => {
-  const { id } = req.params;
-  const currentUserId = req.user.id;
+  const { userId } = req.params;
+  const currentUserId = req.user._id;
 
-  if (id === currentUserId) {
+  if (currentUserId === _id) {
     return res.status(400).json({ error: "You cannot follow yourself." });
   }
 
   try {
-    const userToFollow = await User.findById(id);
+    const userToFollow = await User.findById(_id);
     const currentUser = await User.findById(currentUserId);
 
     if (!userToFollow || !currentUser) {
@@ -23,7 +23,7 @@ const followUser = async (req, res) => {
     }
 
     userToFollow.followers.push(currentUserId);
-    currentUser.following.push(id);
+    currentUser.following.push(_id);
 
     await userToFollow.save();
     await currentUser.save();
@@ -35,11 +35,11 @@ const followUser = async (req, res) => {
 };
 
 const unfollowUser = async (req, res) => {
-  const { id } = req.params;
-  const currentUserId = req.user.id;
+  const { _id } = req.params;
+  const currentUserId = req.user._id;
 
   try {
-    const userToUnfollow = await User.findById(id);
+    const userToUnfollow = await User.findById(_id);
     const currentUser = await User.findById(currentUserId);
 
     if (!userToUnfollow || !currentUser) {
@@ -56,7 +56,7 @@ const unfollowUser = async (req, res) => {
       (followerId) => followerId.toString() !== currentUserId
     );
     currentUser.following = currentUser.following.filter(
-      (followingId) => followingId.toString() !== id
+      (followingId) => followingId.toString() !== _id
     );
 
     await userToUnfollow.save();

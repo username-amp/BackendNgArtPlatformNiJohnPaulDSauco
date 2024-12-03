@@ -1,4 +1,5 @@
-const { User } = require(`../models`);
+const { User, Post } = require(`../models`);
+
 const hashPassword = require(`../utils/hashPassword`);
 const comparePassword = require(`../utils/comparePassword`);
 const generateToken = require(`../utils/generateToken`);
@@ -338,6 +339,41 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
+const getProfileWithDetails = async (req, res, next) => {
+  try {
+    const { _id } = req.user;
+
+    const user = await User.findById(_id).select(
+      "-password -verificationCode -forgotPasswordCode"
+    );
+
+    if (!user) {
+      return res.status(404).json({ code: 404, message: "User not found" });
+    }
+
+    const followerCount = user.followers.length;
+    const followingCount = user.following.length;
+    const postCount = await Post.countDocuments({ user: _id });
+
+    return res.status(200).json({
+      code: 200,
+      status: true,
+      user: {
+        username: user.username,
+        email: user.email,
+        profilePicture: user.profile_picture,
+        bio: user.bio,
+        followers: followerCount,
+        following: followingCount,
+        posts: postCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 module.exports = {
   signup,
   signin,
@@ -348,4 +384,5 @@ module.exports = {
   changePassword,
   updateProfile,
   getProfile,
+  getProfileWithDetails,
 };

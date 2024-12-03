@@ -13,6 +13,7 @@ const {
 const validate = require(`../validators/validate`);
 const isAuth = require(`../middleware/isAuth`);
 
+
 router.post(`/signup`, signupValidation, validate, authController.signup);
 
 router.post(`/signin`, signinValidator, validate, authController.signin);
@@ -62,5 +63,12 @@ router.put(
   validate,
   authController.updateProfile
 );
+
+router.get(
+  `/profile-details`,
+  isAuth,
+  authController.getProfileWithDetails
+);
+
 
 module.exports = router;

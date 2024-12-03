@@ -66,6 +66,21 @@ router.get(
   postController.getSavedPosts
 );
 
-router.get(`/related-posts/:categoryId`, isAuth, postController.getRelatedPosts);
+router.get(
+  `/related-posts/:categoryId`,
+  isAuth,
+  postController.getRelatedPosts
+);
+
+router.get(
+  `/get-user-posts-count/:userId`,
+  isAuth,
+  postController.getUserPostsCount
+);
+
+router.get(
+  `/get-all-posts-of-user-by-user-id/:userId`,
+  isAuth,
+  postController.getAllPostsOfUserByUserId)
 
 module.exports = router;

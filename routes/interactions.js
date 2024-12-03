@@ -41,4 +41,22 @@ router.post(
 
 router.get("/comments/:postId", isAuth, interactionsController.getComments);
 
+router.get(
+  "/get-liked-posts/:userId",
+  isAuth,
+  interactionsController.getLikedPosts
+);
+
+
+router.post(
+  `/follow/:authorId`,
+  isAuth,
+  interactionsController.followUser
+)
+
+router.post(
+  `/unfollow/:authorId`,
+  isAuth,
+  interactionsController.unfollowUser
+)
 module.exports = router;
