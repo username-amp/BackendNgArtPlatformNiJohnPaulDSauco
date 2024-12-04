@@ -4,12 +4,9 @@ const Category = require("../models/Category");
 const User = require("../models/User");
 const Notification = require("../models/Notifications");
 
+
 const createPost = async (req, res, next) => {
   try {
-    console.log("Received Author ID:", req.body.author_id);
-    console.log("Request Body:", req.body);
-    console.log("Uploaded Files:", req.files);
-
     const { title, description, author_id, categoryTitle } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(author_id)) {
@@ -45,7 +42,7 @@ const createPost = async (req, res, next) => {
 
     await post.save();
 
-    
+
 
     res.status(201).json({
       code: 201,

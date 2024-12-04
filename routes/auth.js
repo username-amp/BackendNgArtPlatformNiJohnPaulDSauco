@@ -13,7 +13,6 @@ const {
 const validate = require(`../validators/validate`);
 const isAuth = require(`../middleware/isAuth`);
 
-
 router.post(`/signup`, signupValidation, validate, authController.signup);
 
 router.post(`/signin`, signinValidator, validate, authController.signin);
@@ -64,11 +63,11 @@ router.put(
   authController.updateProfile
 );
 
-router.get(
-  `/profile-details`,
-  isAuth,
-  authController.getProfileWithDetails
-);
+router.get(`/profile-details`, isAuth, authController.getProfileWithDetails);
 
+router.get(
+  "/author-profile-details/:authorId",
+  authController.authorProfileDetails
+);
 
 module.exports = router;

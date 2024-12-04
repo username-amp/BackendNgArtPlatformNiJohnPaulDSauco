@@ -1,5 +1,4 @@
 const { User, Post } = require(`../models`);
-
 const hashPassword = require(`../utils/hashPassword`);
 const comparePassword = require(`../utils/comparePassword`);
 const generateToken = require(`../utils/generateToken`);
@@ -60,21 +59,26 @@ const signin = async (req, res, next) => {
       return res.status(401).json({ message: "Invalid Credentials" });
     }
 
+    if (user.isBanned) {
+      return res.status(403).json({
+        message:
+          "Your account has been banned due to violations. Please contact support.",
+      });
+    }
+
+  
     const match = await comparePassword(password, user.password);
     if (!match) {
       return res.status(401).json({ message: "Invalid Credentials" });
     }
 
-    
     const token = generateToken(user);
 
-    
-  
     res.cookie("token", token, {
       httpOnly: false,
-      secure: process.env.NODE_ENV === "production", 
-      maxAge: 4800000, 
-      sameSite: "Strict", 
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 4800000,
+      sameSite: "Strict",
     });
 
     return res.status(200).json({
@@ -86,6 +90,8 @@ const signin = async (req, res, next) => {
     next(error);
   }
 };
+
+
 
 
 const verifyCode = async (req, res, next) => {
@@ -290,10 +296,19 @@ const getProfile = async (req, res, next) => {
   }
 };
 
+
 const updateProfile = async (req, res, next) => {
   try {
     const { _id } = req.user;
-    const { username, email, profile_picture, cover_photo, bio } = req.body;
+    const { username, email, bio } = req.body;
+
+    const profilePicture = req.files?.profile_picture
+      ? req.files.profile_picture[0]
+      : null;
+    const coverPhoto = req.files?.cover_photo ? req.files.cover_photo[0] : null;
+
+    console.log("Received profile picture:", profilePicture);
+    console.log("Received cover photo:", coverPhoto);
 
     const user = await User.findById(_id).select(
       "-password -verificationCode -forgotPasswordCode"
@@ -304,30 +319,27 @@ const updateProfile = async (req, res, next) => {
       throw new Error(`User Not Found`);
     }
 
-    if (email) {
-      const isUserExist = await User.findOne({ email });
-      if (
-        isUserExist &&
-        isUserExist.email === email &&
-        String(user._id) !== String(isUserExist._id)
-      ) {
-        res.status(400).json({ code: 400, message: "Email already exists" });
-        return;
-      }
-    }
-
     user.username = username ? username : user.username;
     user.email = email ? email : user.email;
-    user.profile_picture = profile_picture
-      ? profile_picture
-      : user.profile_picture;
-    user.cover_photo = cover_photo ? cover_photo : user.cover_photo;
     user.bio = bio ? bio : user.bio;
+
+    console.log("User before saving:", user);
+
+    if (profilePicture) {
+      user.profile_picture = `/uploads/${profilePicture.filename}`;
+    }
+
+    if (coverPhoto) {
+      user.cover_photo = `/uploads/${coverPhoto.filename}`;
+    }
 
     if (email) {
       user.isVerified = false;
     }
+
     await user.save();
+
+    console.log("User after saving:", user);
 
     res.status(200).json({
       code: 200,
@@ -335,9 +347,14 @@ const updateProfile = async (req, res, next) => {
       message: `Profile Updated Successfully`,
     });
   } catch (error) {
+    console.error("Error updating profile:", error);
     next(error);
   }
 };
+
+
+
+
 
 const getProfileWithDetails = async (req, res, next) => {
   try {
@@ -373,6 +390,43 @@ const getProfileWithDetails = async (req, res, next) => {
   }
 };
 
+const authorProfileDetails = async (req, res, next) => {
+  try {
+    const { authorId } = req.params;
+
+    const user = await User.findById(authorId).select(
+      "-password -verificationCode -forgotPasswordCode"
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        code: 404,
+        status: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      code: 200,
+      status: true,
+      message: "User profile details fetched successfully",
+      data: user,
+      user: {
+        username: user.username,
+        email: user.email,
+        profilePicture: user.profile_picture,
+        bio: user.bio,
+        followers: user.followers.length,
+        following: user.following.length,
+        posts: await Post.countDocuments({ user: authorId }),
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 
 module.exports = {
   signup,
@@ -385,4 +439,5 @@ module.exports = {
   updateProfile,
   getProfile,
   getProfileWithDetails,
+  authorProfileDetails
 };

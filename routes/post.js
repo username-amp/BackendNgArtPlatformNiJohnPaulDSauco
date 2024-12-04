@@ -6,11 +6,15 @@ const validate = require("../validators/validate");
 const upload = require("../middleware/multerConfig");
 const isAuth = require("../middleware/isAuth");
 const { check } = require("express-validator");
+const {checkExplicitContent} = require("../middleware/checkExplicitContent")
+const artCategoryMiddleware = require("../middleware/artCategoryMiddleware");
 
 router.post(
   "/create-post",
   isAuth,
   upload.array("image_url", 6),
+  artCategoryMiddleware,
+  checkExplicitContent,
   postValidation,
   validate,
   postController.createPost

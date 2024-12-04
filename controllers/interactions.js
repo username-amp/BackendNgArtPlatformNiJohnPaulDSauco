@@ -95,7 +95,12 @@ const commentPost = async (req, res) => {
   const recipientId = req.body.recipientId;
 
   try {
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId)
+      .populate({
+        path: "comments.user_id",
+      })
+      .exec();
+
     if (!post) return res.status(404).json({ message: "Post not found" });
 
     await Post.findByIdAndUpdate(
@@ -126,12 +131,18 @@ const commentPost = async (req, res) => {
         authorUsername: author.username,
         recipientUsername: recipient ? recipient.username : null,
       },
+      comment: {
+        user_id: authorId,
+        content: commentContent,
+        username: author.username,
+      },
     });
   } catch (error) {
     console.error("Error in comment route:", error);
     res.status(500).json({ message: "An error occurred" });
   }
 };
+
 
 const savePost = async (req, res, next) => {
   try {
@@ -211,6 +222,68 @@ const getComments = async (req, res) => {
   }
 };
 
+const editComment = async (req, res) => {
+  const { postId, commentId, newContent } = req.body;
+  const authorId = req.user._id;
+
+  try {
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    const comment = post.comments.id(commentId);
+    if (!comment) return res.status(404).json({ message: "Comment not found" });
+
+    if (comment.user_id.toString() !== authorId.toString()) {
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to edit this comment" });
+    }
+
+    comment.content = newContent;
+    await post.save();
+
+    res.status(200).json({
+      message: "Comment updated successfully",
+      comment: comment,
+    });
+  } catch (error) {
+    console.error("Error editing comment:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while updating the comment" });
+  }
+};
+
+const deleteComment = async (req, res) => {
+  const { postId, commentId } = req.body;
+  const authorId = req.user._id;
+
+  try {
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    const comment = post.comments.id(commentId);
+    if (!comment) return res.status(404).json({ message: "Comment not found" });
+
+    if (comment.user_id.toString() !== authorId.toString()) {
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to delete this comment" });
+    }
+
+    post.comments.pull(commentId);
+    post.comments_count -= 1;
+
+    await post.save();
+
+    res.status(200).json({ message: "Comment deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting comment:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while deleting the comment" });
+  }
+};
 
 const getLikedPosts = async (req, res) => {
   const userId = req.user._id;
@@ -247,8 +320,6 @@ const followUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-   
-
     userToFollow.followers.addToSet(userId);
     currentUser.following.addToSet(authorId);
 
@@ -261,7 +332,6 @@ const followUser = async (req, res) => {
     res.status(500).json({ message: "An error occurred while following user" });
   }
 };
-
 
 const unfollowUser = async (req, res) => {
   try {
@@ -283,7 +353,6 @@ const unfollowUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-   
     userToUnfollow.followers.pull(userId);
     currentUser.following.pull(authorId);
 
@@ -299,5 +368,15 @@ const unfollowUser = async (req, res) => {
   }
 };
 
-
-module.exports = { getComments, likePost, commentPost, savePost, unlikePost, getLikedPosts, followUser, unfollowUser };
+module.exports = {
+  getComments,
+  likePost,
+  commentPost,
+  savePost,
+  unlikePost,
+  getLikedPosts,
+  followUser,
+  unfollowUser,
+  editComment,
+  deleteComment,
+};

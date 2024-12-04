@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Violation = require("../models/Violation");
 
 const followUser = async (req, res) => {
   const { userId } = req.params;
@@ -104,9 +105,94 @@ const getFollowing = async (req, res) => {
   }
 };
 
+const increamentViolation = async (req, res) => {
+  try {
+    const user = await User.findById(req.params._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.violations += 1;
+
+    if (user.violations === 2) {
+      await user.save();
+
+      return res.status(200).json({
+        message:
+          "You have 2 violations. Please be cautious! Further violations will result in restriction or ban.",
+      });
+    }
+
+    if (user.violations >= 3) {
+      user.isBanned = true;
+      res.clearCookie("token");
+
+      await user.save();
+
+      return res.status(403).json({
+        message:
+          "You have been banned due to 3 violations. Please contact support.",
+      });
+    }
+
+    await user.save();
+
+    await Violation.create({
+      userId: req.params._id,
+      reason: "Inappropriate content in post",
+    });
+
+    res.status(200).json({ message: "Violation recorded successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const getUserViolations = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findById(userId).select("violations");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ violations: user.violations });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const getViolation = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const violations = await Violation.find({ userId });
+
+    const user = await User.findById(userId, "violationCount");
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({
+      violations,
+      violationCount: user.violationCount || 0,
+    });
+  } catch (error) {
+    console.error("Error fetching violations:", error);
+    res.status(500).json({ error: "Server error. Please try again later." });
+  }
+};
+
 module.exports = {
   followUser,
   unfollowUser,
   getFollowers,
   getFollowing,
+  increamentViolation,
+  getUserViolations,
+  getViolation,
 };

@@ -47,16 +47,20 @@ router.get(
   interactionsController.getLikedPosts
 );
 
+router.post(`/follow/:authorId`, isAuth, interactionsController.followUser);
 
-router.post(
-  `/follow/:authorId`,
-  isAuth,
-  interactionsController.followUser
-)
+router.post(`/unfollow/:authorId`, isAuth, interactionsController.unfollowUser);
 
-router.post(
-  `/unfollow/:authorId`,
+router.put(
+  `/edit-comment/:commentId`,
   isAuth,
-  interactionsController.unfollowUser
-)
+  interactionsController.editComment
+);
+
+router.delete(
+  `/delete-comment/:commentId`,
+  isAuth,
+  interactionsController.deleteComment
+);
+
 module.exports = router;
