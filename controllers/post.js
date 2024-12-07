@@ -3,7 +3,9 @@ const Post = require("../models/Post");
 const Category = require("../models/Category");
 const User = require("../models/User");
 const Notification = require("../models/Notifications");
-
+const { getIO } = require("../socket");
+const SaveStatus = require("../models/Save");
+const { Types } = mongoose;
 
 const createPost = async (req, res, next) => {
   try {
@@ -36,19 +38,26 @@ const createPost = async (req, res, next) => {
       title,
       description,
       image_url: imageUrls,
-      author_id,
+      author_id: author._id,
+      username: author.username,
       category: category._id,
+      categoryTitle: category.title,
     });
 
     await post.save();
 
+    const populatedPost = await Post.findById(post._id)
+      .populate("author_id", "username")
+      .populate("category", "title");
 
+    const io = getIO();
+    io.emit("newPost", populatedPost);
 
     res.status(201).json({
       code: 201,
       status: true,
       message: "Post created successfully",
-      post,
+      post: populatedPost,
     });
   } catch (error) {
     console.error("Error creating post:", error.message);
@@ -58,12 +67,32 @@ const createPost = async (req, res, next) => {
 
 const getAllPosts = async (req, res) => {
   try {
-    const posts = await Post.find()
+    const { search } = req.query;
+
+    console.log("Search Query:", search);
+
+    let filter = {};
+    if (search) {
+      filter = {
+        $or: [
+          { title: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+          { username: { $regex: search, $options: "i" } },
+          { categoryTitle: { $regex: search, $options: "i" } },
+        ],
+      };
+    }
+
+    const posts = await Post.find(filter)
       .populate("category", "title")
       .populate("author_id", "username");
 
+    console.log("Fetched Posts:", posts);
+
     res.status(200).json(posts);
   } catch (error) {
+    console.error("Error:", error);
+
     res
       .status(500)
       .json({ message: "Failed to fetch posts", error: error.message });
@@ -85,7 +114,6 @@ const getPostById = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 const updatePost = async (req, res, next) => {
   try {
@@ -145,21 +173,20 @@ const removeSavedPost = async (req, res, next) => {
   const { userId, postId } = req.body;
 
   try {
-
     const user = await User.findById(userId);
-
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-
-    user.savedPosts = user.savedPosts || [];
-
-   
-
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { $pull: { savedPosts: postId } },
+      { new: true }
+    );
+
+    await SaveStatus.findOneAndUpdate(
+      { user_id: userId, post_id: postId },
+      { status: false },
       { new: true }
     );
 
@@ -192,10 +219,6 @@ const removeSavedPost = async (req, res, next) => {
   }
 };
 
-
-
-
-
 const getSavedPosts = async (req, res, next) => {
   const { userId } = req.params;
 
@@ -221,8 +244,6 @@ const getSavedPosts = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 const getRelatedPosts = async (req, res) => {
   const { categoryId } = req.params;
@@ -293,7 +314,6 @@ const getUserPostsCount = async (req, res) => {
   }
 };
 
-
 const getAllPostsOfUserByUserId = async (req, res) => {
   const { userId } = req.params;
 
@@ -327,8 +347,45 @@ const getAllPostsOfUserByUserId = async (req, res) => {
   }
 };
 
+const getFilteredPosts = async (req, res) => {
+  const { query } = req.query.query;
 
+  if (!query) {
+    return res.status(400).json({ message: "Search query is required." });
+  }
 
+  try {
+    const posts = await Post.find({
+      $or: [
+        { title: { $regex: query, $options: "i" } },
+        { content: { $regex: query, $options: "i" } },
+      ],
+    });
+
+    if (posts.length === 0) {
+      return res.status(404).json({ message: "No posts found" });
+    }
+
+    return res.json(posts);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error fetching posts" });
+  }
+};
+
+const checkCategoryUsage = async (req, res) => {
+  const { categoryTitle } = req.query;
+
+  try {
+    const count = await Post.countDocuments({ categoryTitle });
+    res.status(200).json({ exists: count > 0 });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to check category usage",
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
   createPost,
@@ -340,5 +397,7 @@ module.exports = {
   removeSavedPost,
   getRelatedPosts,
   getUserPostsCount,
-  getAllPostsOfUserByUserId
+  getAllPostsOfUserByUserId,
+  getFilteredPosts,
+  checkCategoryUsage,
 };

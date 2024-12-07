@@ -2,6 +2,10 @@ const Notification = require("../models/Notifications");
 const mongoose = require("mongoose");
 const Post = require("../models/Post");
 const User = require("../models/User");
+const { getIO } = require("../socket");
+const Like = require("../models/Like");
+const SaveStatus = require("../models/Save");
+const Follow = require("../models/Follow");
 
 const likePost = async (req, res) => {
   try {
@@ -20,13 +24,29 @@ const likePost = async (req, res) => {
       return res.status(404).json({ message: "Post not found." });
     }
 
-    post.likes.push({ user_id: authorId });
+    let like = await Like.findOne({ user_id: authorId, post_id: postId });
+
+    if (like) {
+      if (like.status === true) {
+        return res
+          .status(400)
+          .json({ message: "You've already liked this post." });
+      }
+
+      like.status = true;
+      await like.save();
+    } else {
+      like = new Like({ user_id: authorId, post_id: postId, status: true });
+      await like.save();
+    }
+
     post.likes_count += 1;
+    post.likes.push({ user_id: authorId });
     await post.save();
 
     await Notification.create({
-      recipient: authorId,
-      author: recipientId,
+      recipient: recipientId,
+      author: authorId,
       type: "like",
       post: postId,
     });
@@ -60,22 +80,28 @@ const unlikePost = async (req, res) => {
       return res.status(404).json({ message: "Post not found." });
     }
 
-    const notification = await Notification.findOneAndDelete({
-      recipient: authorId,
-      author: recipientId,
+    const like = await Like.findOne({ user_id: authorId, post_id: postId });
+    if (!like || like.status === false) {
+      return res
+        .status(400)
+        .json({ message: "You haven't liked this post yet." });
+    }
+
+    like.status = false;
+    await like.save();
+
+    post.likes_count -= 1;
+    post.likes = post.likes.filter(
+      (like) => like.user_id.toString() !== authorId
+    );
+    await post.save();
+
+    await Notification.findOneAndDelete({
+      recipient: recipientId,
+      author: authorId,
       type: "like",
       post: postId,
     });
-
-    if (!notification) {
-      console.log("No like notification found to delete.");
-    }
-
-    post.likes = post.likes.filter(
-      (like) => like.user_id.toString() !== recipientId
-    );
-    post.likes_count -= 1;
-    await post.save();
 
     res.status(200).json({
       message: "Post unliked successfully.",
@@ -90,27 +116,23 @@ const unlikePost = async (req, res) => {
 };
 
 const commentPost = async (req, res) => {
-  const { postId, commentContent } = req.body;
+  const { postId, commentContent, recipientId } = req.body;
   const authorId = req.user._id;
-  const recipientId = req.body.recipientId;
 
   try {
-    const post = await Post.findById(postId)
-      .populate({
-        path: "comments.user_id",
-      })
-      .exec();
-
+    const post = await Post.findById(postId);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    await Post.findByIdAndUpdate(
+    const updatedPost = await Post.findByIdAndUpdate(
       postId,
       {
         $inc: { comments_count: 1 },
         $push: { comments: { user_id: authorId, content: commentContent } },
       },
       { new: true }
-    );
+    ).populate({
+      path: "comments.user_id",
+    });
 
     const author = await User.findById(authorId);
     const recipient = recipientId ? await User.findById(recipientId) : null;
@@ -121,11 +143,20 @@ const commentPost = async (req, res) => {
       type: "comment",
       post: postId,
     });
-
     await notification.save();
 
+    const io = getIO();
+    io.emit("newComment", {
+      postId,
+      comment: {
+        user_id: authorId,
+        username: author.username,
+        content: commentContent,
+      },
+    });
+
     res.status(200).json({
-      message: "Comment added and notification created successfully",
+      message: "Comment added successfully",
       notification: {
         ...notification.toObject(),
         authorUsername: author.username,
@@ -133,8 +164,8 @@ const commentPost = async (req, res) => {
       },
       comment: {
         user_id: authorId,
-        content: commentContent,
         username: author.username,
+        content: commentContent,
       },
     });
   } catch (error) {
@@ -142,7 +173,6 @@ const commentPost = async (req, res) => {
     res.status(500).json({ message: "An error occurred" });
   }
 };
-
 
 const savePost = async (req, res, next) => {
   try {
@@ -165,14 +195,28 @@ const savePost = async (req, res, next) => {
       return res.status(400).json({ message: "Cannot save your own post" });
     }
 
+    const existingSaveStatus = await SaveStatus.findOne({
+      user_id: userId,
+      post_id: postId,
+    });
+
+    if (existingSaveStatus && existingSaveStatus.status === true) {
+      return res
+        .status(400)
+        .json({ message: "You've already saved this post" });
+    }
+
+    await SaveStatus.findOneAndUpdate(
+      { user_id: userId, post_id: postId },
+      { status: true },
+      { upsert: true, new: true }
+    );
+
     await User.findByIdAndUpdate(
       userId,
       { $addToSet: { savedPosts: postId } },
       { new: true }
     );
-
-    const updatedUser = await User.findById(userId);
-    console.log(updatedUser.savedPosts);
 
     const notification = new Notification({
       recipient: post.author_id,
@@ -183,8 +227,11 @@ const savePost = async (req, res, next) => {
 
     await notification.save();
 
+    const updatedUser = await User.findById(userId).populate("savedPosts");
+
     res.status(200).json({
       message: "Post saved and notification created successfully",
+      savedPosts: updatedUser.savedPosts,
       notification,
     });
   } catch (error) {
@@ -320,6 +367,23 @@ const followUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    let follow = await Follow.findOne({
+      follower: userId,
+      following: authorId,
+    });
+
+    if (follow) {
+      follow.status = true;
+      await follow.save();
+    } else {
+      follow = new Follow({
+        follower: userId,
+        following: authorId,
+        status: true,
+      });
+      await follow.save();
+    }
+
     userToFollow.followers.addToSet(userId);
     currentUser.following.addToSet(authorId);
 
@@ -353,6 +417,16 @@ const unfollowUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    const follow = await Follow.findOne({
+      follower: userId,
+      following: authorId,
+    });
+
+    if (follow) {
+      follow.status = false;
+      await follow.save();
+    }
+
     userToUnfollow.followers.pull(userId);
     currentUser.following.pull(authorId);
 
@@ -368,6 +442,56 @@ const unfollowUser = async (req, res) => {
   }
 };
 
+const getSavedStatus = async (req, res) => {
+  try {
+    const { postId, userId } = req.query;
+    const user = await User.findById(userId);
+    const post = await Post.findById(postId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const saveStatus = await SaveStatus.findOne({
+      user_id: userId,
+      post_id: postId,
+    });
+
+    const isSaved = saveStatus ? saveStatus.status : false;
+
+    res.status(200).json({ isSaved });
+  } catch (error) {
+    console.error("Error fetching saved status:", error);
+    res.status(500).json({ message: "Failed to fetch saved status" });
+  }
+};
+
+const checkFollowStatus = async (req, res) => {
+  try {
+    const { authorId } = req.params;
+    const userId = req.user._id;
+
+    const follow = await Follow.findOne({
+      follower: userId,
+      following: authorId,
+    });
+
+    if (!follow) {
+      return res.status(200).json({ isFollowing: false });
+    }
+
+    return res.status(200).json({ isFollowing: follow.status });
+  } catch (error) {
+    console.error("Error checking follow status:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while checking follow status" });
+  }
+};
+
 module.exports = {
   getComments,
   likePost,
@@ -379,4 +503,6 @@ module.exports = {
   unfollowUser,
   editComment,
   deleteComment,
+  getSavedStatus,
+  checkFollowStatus,
 };

@@ -28,9 +28,19 @@ const postSchema = mongoose.Schema(
       required: true,
     },
 
+    username: {
+      type: String,
+      required: true, 
+    },
+
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
+      required: true,
+    },
+
+    categoryTitle: {
+      type: String,
       required: true,
     },
 
@@ -83,4 +93,12 @@ const postSchema = mongoose.Schema(
   { timestamps: true }
 );
 
+postSchema.index({
+  title: "text",
+  description: "text",
+  username: "text",
+  categoryTitle: "text",
+});
+
 module.exports = mongoose.model("Post", postSchema);
+

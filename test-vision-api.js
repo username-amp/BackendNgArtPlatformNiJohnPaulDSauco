@@ -23,7 +23,7 @@ async function detectExplicitContent(imagePath) {
 }
 
 const imagePath =
-  "C:\\Users\\Merlyn M. Ramos\\Downloads\\merrill__5_by_joneddd_dinmf4w-375w-2x.jpg"; // Correct the path with double backslashes
+  "C:\\Users\\Merlyn M. Ramos\\Downloads\\merrill__5_by_joneddd_dinmf4w-375w-2x.jpg";
 detectExplicitContent(imagePath).then((detections) => {
   console.log("Explicit Content Analysis Complete");
 });

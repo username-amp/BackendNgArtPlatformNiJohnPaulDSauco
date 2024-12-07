@@ -20,7 +20,7 @@ const getNotifications = async (req, res) => {
     const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
       .limit(parsedLimit)
-      .populate("author", "username") // Fetch only the username of the author
+      .populate("author", "username")
       .exec();
 
     const formattedNotifications = notifications.map((notif) => {
@@ -57,9 +57,6 @@ const getNotifications = async (req, res) => {
     res.status(500).json({ message: "An error occurred" });
   }
 };
-
-
-
 
 const markAsRead = async (req, res) => {
   const { notificationIds } = req.body;

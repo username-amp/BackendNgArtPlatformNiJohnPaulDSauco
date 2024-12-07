@@ -2,6 +2,7 @@ const express = require("express");
 const { userController } = require("../controllers");
 const { validateFollowRequest } = require("../validators/user");
 const isAuth = require("../middleware/isAuth");
+const validate = require("../validators/validate");
 
 const router = express.Router();
 
@@ -23,8 +24,18 @@ router.patch(
   userController.increamentViolation
 );
 
-router.get("/:userId/violations", isAuth, userController.getUserViolations);
+router.get(
+  "/:userId/violations",
+  validate,
+  isAuth,
+  userController.getUserViolations
+);
 
-router.get("/violations/:userId", isAuth, userController.getViolation);
+router.get(
+  "/violations/:userId",
+  validate,
+  isAuth,
+  userController.getViolation
+);
 
 module.exports = router;

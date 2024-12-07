@@ -2,7 +2,6 @@ const path = require("path");
 const vision = require("@google-cloud/vision");
 const mongoose = require("mongoose");
 const Category = require("../models/Category");
-const Post = require("../models/Post"); 
 
 const client = new vision.ImageAnnotatorClient({
   keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
@@ -28,6 +27,8 @@ const artCategoryMiddleware = async (req, res, next) => {
     const labels = labelDetectionResults
       .flat()
       .map((label) => label.description.toLowerCase());
+
+    console.log("Detected Labels:", labels);
 
     const artLabels = [
       "painting",
@@ -55,35 +56,43 @@ const artCategoryMiddleware = async (req, res, next) => {
       "mosaic",
       "mixed media",
       "digital painting",
-      "concept art", 
-      "art deco", 
-      "minimalism", 
+      "concept art",
+      "art deco",
+      "minimalism",
       "surrealism",
       "impressionism",
       "realism",
       "expressionism",
       "photorealism",
+      "interior design",
+      "furniture",
+      "decoration",
     ];
 
-    const matchingLabels = labels.filter((label) => artLabels.includes(label));
+    const matchingLabels = labels.filter((label) =>
+      artLabels.some((artLabel) => label.includes(artLabel))
+    );
 
-   
-    const categoryTitle = matchingLabels.join(", ");
-    const existingCategory = await Category.findOne({ title: categoryTitle });
-
-    let category;
-    if (!existingCategory) {
-      category = new Category({ title: categoryTitle });
-      await category.save();
-    } else {
-      category = existingCategory;
+    if (!matchingLabels.length) {
+      req.body.categoryTitle = "Uncategorized Art";
+      return next();
     }
 
-    req.body.categoryTitle = category.title;
+    const categoryTitle = matchingLabels[0];
+
+    const existingCategory = await Category.findOne({ title: categoryTitle });
+
+    if (!existingCategory) {
+      const newCategory = new Category({ title: categoryTitle });
+      await newCategory.save();
+      req.body.categoryTitle = newCategory.title;
+    } else {
+      req.body.categoryTitle = existingCategory.title;
+    }
 
     next();
   } catch (error) {
-    console.error("Error analyzing image:", error);
+    console.error("Error analyzing image:", error.message);
     res.status(500).json({ message: "Error categorizing image based on art" });
   }
 };

@@ -6,7 +6,7 @@ const validate = require("../validators/validate");
 const upload = require("../middleware/multerConfig");
 const isAuth = require("../middleware/isAuth");
 const { check } = require("express-validator");
-const {checkExplicitContent} = require("../middleware/checkExplicitContent")
+const { checkExplicitContent } = require("../middleware/checkExplicitContent");
 const artCategoryMiddleware = require("../middleware/artCategoryMiddleware");
 
 router.post(
@@ -45,7 +45,6 @@ router.put(
 router.delete(
   "/delete-post/:postId",
   isAuth,
-  postValidation,
   validate,
   postController.deletePost
 );
@@ -85,6 +84,16 @@ router.get(
 router.get(
   `/get-all-posts-of-user-by-user-id/:userId`,
   isAuth,
-  postController.getAllPostsOfUserByUserId)
+  postController.getAllPostsOfUserByUserId
+);
+
+router.get(`/get-post/search`, isAuth, postController.getFilteredPosts);
+
+router.get(
+  "/check-category",
+  isAuth,
+  validate,
+  postController.checkCategoryUsage
+);
 
 module.exports = router;

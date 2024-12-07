@@ -16,6 +16,7 @@ router.post(
   validate,
   interactionsController.likePost
 );
+
 router.post(
   "/comment",
   isAuth,
@@ -61,6 +62,20 @@ router.delete(
   `/delete-comment/:commentId`,
   isAuth,
   interactionsController.deleteComment
+);
+
+router.get(
+  `/saved-status/:postId`,
+  isAuth,
+  validate,
+  interactionsController.getSavedStatus
+);
+
+router.get(
+  `/check-follow/:authorId`,
+  isAuth,
+  validate,
+  interactionsController.checkFollowStatus
 );
 
 module.exports = router;
