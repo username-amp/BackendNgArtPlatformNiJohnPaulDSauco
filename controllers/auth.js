@@ -315,21 +315,27 @@ const updateProfile = async (req, res, next) => {
     );
 
     if (!user) {
-      res.code = 404;
-      throw new Error(`User Not Found`);
+      res
+        .status(404)
+        .json({ code: 404, status: false, message: "User Not Found" });
+      return;
     }
 
-    user.username = username ? username : user.username;
-    user.email = email ? email : user.email;
-    user.bio = bio ? bio : user.bio;
-
-    console.log("User before saving:", user);
+    // Update user fields
+    user.username = username || user.username;
+    user.email = email || user.email;
+    user.bio = bio || user.bio;
 
     if (profilePicture) {
+      console.log(
+        "Setting profile_picture:",
+        `/uploads/${profilePicture.filename}`
+      );
       user.profile_picture = `/uploads/${profilePicture.filename}`;
     }
 
     if (coverPhoto) {
+      console.log("Setting cover_photo:", `/uploads/${coverPhoto.filename}`);
       user.cover_photo = `/uploads/${coverPhoto.filename}`;
     }
 
@@ -338,19 +344,19 @@ const updateProfile = async (req, res, next) => {
     }
 
     await user.save();
-
-    console.log("User after saving:", user);
+    console.log("User profile updated in database:", user);
 
     res.status(200).json({
       code: 200,
       status: true,
-      message: `Profile Updated Successfully`,
+      message: "Profile Updated Successfully",
     });
   } catch (error) {
     console.error("Error updating profile:", error);
     next(error);
   }
 };
+
 
 
 
@@ -410,16 +416,15 @@ const authorProfileDetails = async (req, res, next) => {
       code: 200,
       status: true,
       message: "User profile details fetched successfully",
-      data: user,
       user: {
         username: user.username,
         email: user.email,
-        profilePicture: user.profile_picture,
+        profilePicture: user.profile_picture, // Ensure it matches your frontend
         bio: user.bio,
         followers: user.followers.length,
         following: user.following.length,
         posts: await Post.countDocuments({ user: authorId }),
-      }
+      },
     });
   } catch (error) {
     next(error);

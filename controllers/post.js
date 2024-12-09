@@ -67,13 +67,13 @@ const createPost = async (req, res, next) => {
 
 const getAllPosts = async (req, res) => {
   try {
-    const { search } = req.query;
+    const { search, filter } = req.query;
 
     console.log("Search Query:", search);
 
-    let filter = {};
+    let filterQuery = {};
     if (search) {
-      filter = {
+      filterQuery = {
         $or: [
           { title: { $regex: search, $options: "i" } },
           { description: { $regex: search, $options: "i" } },
@@ -83,11 +83,19 @@ const getAllPosts = async (req, res) => {
       };
     }
 
-    const posts = await Post.find(filter)
-      .populate("category", "title")
-      .populate("author_id", "username");
+    // Initialize sortOption based on the filter type
+    let sortOption = {};
+    if (filter === "recent") {
+      sortOption = { createdAt: -1 }; // Sort by createdAt in descending order (recent posts first)
+    } else if (filter === "popular") {
+      sortOption = { likes: -1 }; // Sort by likes in descending order (popular posts first)
+    }
 
-    console.log("Fetched Posts:", posts);
+    // Fetch posts with filter and sorting options
+    const posts = await Post.find(filterQuery)
+      .populate("category", "title")
+      .populate("author_id", "username")
+      .sort(sortOption); // Apply sorting here
 
     res.status(200).json(posts);
   } catch (error) {
@@ -99,12 +107,13 @@ const getAllPosts = async (req, res) => {
   }
 };
 
+
 const getPostById = async (req, res) => {
   try {
     const post = await Post.findById(req.params.postId).populate(
       "author_id",
       "username profile_picture"
-    );
+    )
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
@@ -114,6 +123,28 @@ const getPostById = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+const getPostWithLikes = async (req, res) => {
+  try {
+    // Populate `likes.user_id` with the user's `username` and `profile_picture`
+    const post = await Post.findById(req.params.postId).populate(
+      "likes.user_id",
+      "username profile_picture"
+    ); // Populate the users who liked the post
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Send back the post data with populated likes
+    res.status(200).json(post);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
 
 const updatePost = async (req, res, next) => {
   try {
@@ -391,6 +422,7 @@ module.exports = {
   createPost,
   getAllPosts,
   getPostById,
+  getPostWithLikes,
   updatePost,
   deletePost,
   getSavedPosts,

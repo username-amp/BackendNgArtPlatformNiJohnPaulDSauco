@@ -34,6 +34,13 @@ router.get(
   postController.getPostById
 );
 
+router.get(
+  "/likes/:postId",
+  isAuth,
+  validate,
+  postController.getPostWithLikes
+);
+
 router.put(
   "/update-post/:postId",
   isAuth,

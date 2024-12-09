@@ -12,6 +12,7 @@ const {
 } = require(`../validators/auth`);
 const validate = require(`../validators/validate`);
 const isAuth = require(`../middleware/isAuth`);
+const upload = require(`../middleware/multerConfig`);
 
 router.post(`/signup`, signupValidation, validate, authController.signup);
 
@@ -60,6 +61,10 @@ router.put(
   isAuth,
   updateProfileValidator,
   validate,
+  upload.fields([
+    { name: "profile_picture", maxCount: 1 },
+    { name: "cover_photo", maxCount: 1 },
+  ]),
   authController.updateProfile
 );
 

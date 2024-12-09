@@ -20,31 +20,40 @@ const getNotifications = async (req, res) => {
     const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
       .limit(parsedLimit)
-      .populate("author", "username")
+      .populate("author", "username") // Populating author
+      .populate("post", "title _id image_url") // Populating the psot field
       .exec();
 
     const formattedNotifications = notifications.map((notif) => {
       let message = "";
+      let url = ""; // Add a URL field
+
       switch (notif.type) {
         case "like":
-          message = `Liked your post`;
+          message = `${notif.author?.username} liked your post`; // Including author's username
+          url = `/post/${notif.post?._id}`; // Using the populated `post._id` for the URL
           break;
         case "comment":
-          message = `Commented on your post`;
+          message = `${notif.author?.username} commented on your post`; // Including author's username
+          url = `/post/${notif.post?._id}`; // Using the populated `post._id` for the URL
           break;
         case "follow":
-          message = `Started following you`;
+          message = `${notif.author?.username} started following you`; // Including author's username
+          url = `/profile/${notif.author?._id}`; // Link to the author's profile
           break;
         case "save":
-          message = `Saved your post`;
+          message = `${notif.author?.username} saved your post`; // Including author's username
+          url = `/post/${notif.post?._id}`; // Using the populated `post._id` for the URL
           break;
         default:
-          message = `New activity`;
+          message = `${notif.author?.username} performed a new activity`; // Default message
+          url = "/"; // Default URL
       }
 
       return {
         ...notif._doc,
         message,
+        url, // Include the URL in the formatted notification
       };
     });
 
@@ -57,6 +66,10 @@ const getNotifications = async (req, res) => {
     res.status(500).json({ message: "An error occurred" });
   }
 };
+
+
+
+
 
 const markAsRead = async (req, res) => {
   const { notificationIds } = req.body;
