@@ -83,20 +83,17 @@ const getAllPosts = async (req, res) => {
       };
     }
 
-    // Initialize sortOption based on the filter type
     let sortOption = {};
     if (filter === "recent") {
-      sortOption = { createdAt: -1 }; // Sort by createdAt in descending order (recent posts first)
+      sortOption = { createdAt: -1 };
     } else if (filter === "popular") {
-      sortOption = { likes: -1 }; // Sort by likes in descending order (popular posts first)
+      sortOption = { likes: -1 };
     }
 
-    // Fetch posts with filter and sorting options
     const posts = await Post.find(filterQuery)
       .populate("category", "title")
       .populate("author_id", "username")
-      .sort(sortOption); // Apply sorting here
-
+      .sort(sortOption);
     res.status(200).json(posts);
   } catch (error) {
     console.error("Error:", error);
@@ -107,13 +104,12 @@ const getAllPosts = async (req, res) => {
   }
 };
 
-
 const getPostById = async (req, res) => {
   try {
     const post = await Post.findById(req.params.postId).populate(
       "author_id",
       "username profile_picture"
-    )
+    );
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
@@ -126,25 +122,21 @@ const getPostById = async (req, res) => {
 
 const getPostWithLikes = async (req, res) => {
   try {
-    // Populate `likes.user_id` with the user's `username` and `profile_picture`
     const post = await Post.findById(req.params.postId).populate(
       "likes.user_id",
       "username profile_picture"
-    ); // Populate the users who liked the post
+    );
 
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    // Send back the post data with populated likes
     res.status(200).json(post);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
 
 const updatePost = async (req, res, next) => {
   try {

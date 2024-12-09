@@ -11,7 +11,6 @@ const likePost = async (req, res) => {
   try {
     const { authorId, recipientId, postId } = req.body;
 
-    // Check if IDs are valid MongoDB ObjectIds
     if (
       ![authorId, recipientId, postId].every(mongoose.Types.ObjectId.isValid)
     ) {
@@ -45,7 +44,6 @@ const likePost = async (req, res) => {
     post.likes.push({ user_id: authorId });
     await post.save();
 
-    // Only create notification if authorId and recipientId are not the same
     if (authorId !== recipientId) {
       await Notification.create({
         recipient: recipientId,
@@ -127,7 +125,6 @@ const commentPost = async (req, res) => {
     const post = await Post.findById(postId);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    // Update the post with the new comment
     const updatedPost = await Post.findByIdAndUpdate(
       postId,
       {
@@ -142,7 +139,6 @@ const commentPost = async (req, res) => {
     const author = await User.findById(authorId);
     const recipient = recipientId ? await User.findById(recipientId) : null;
 
-    // Only create a notification if the author and recipient are different
     if (recipientId && recipientId !== authorId) {
       const notification = new Notification({
         recipient: recipientId,
@@ -162,7 +158,6 @@ const commentPost = async (req, res) => {
         },
       });
 
-      // Send the response with the notification and comment details
       res.status(200).json({
         message: "Comment added successfully",
         notification: {
@@ -177,7 +172,6 @@ const commentPost = async (req, res) => {
         },
       });
     } else {
-      // If the author and recipient are the same, just send the comment without notification
       res.status(200).json({
         message: "Comment added successfully",
         comment: {
@@ -198,10 +192,10 @@ const savePost = async (req, res, next) => {
     const { postId } = req.body;
     const userId = req.user._id;
 
-    console.log(`User ID: ${userId}, Post ID: ${postId}`); // Debugging: Check user and post IDs
+    console.log(`User ID: ${userId}, Post ID: ${postId}`);
 
     if (!userId || !postId) {
-      console.log("User ID or Post ID missing"); // Debugging: Check for missing IDs
+      console.log("User ID or Post ID missing");
       return res
         .status(400)
         .json({ message: "Both userId and postId are required" });
@@ -210,36 +204,33 @@ const savePost = async (req, res, next) => {
     const user = await User.findById(userId);
     const post = await Post.findById(postId);
 
-    console.log(`User: ${JSON.stringify(user)}, Post: ${JSON.stringify(post)}`); // Debugging: Check user and post data
+    console.log(`User: ${JSON.stringify(user)}, Post: ${JSON.stringify(post)}`);
 
     if (!user) {
-      console.log("User not found"); // Debugging: User not found
+      console.log("User not found");
       return res.status(404).json({ message: "User not found" });
     }
     if (!post) {
-      console.log("Post not found"); // Debugging: Post not found
+      console.log("Post not found");
       return res.status(404).json({ message: "Post not found" });
     }
 
-    // Debugging: Check if user and post author are the same
     console.log(`userId: ${userId}, post.author_id: ${post.author_id}`);
-    
 
     const existingSaveStatus = await SaveStatus.findOne({
       user_id: userId,
       post_id: postId,
     });
 
-    console.log(`Existing save status: ${JSON.stringify(existingSaveStatus)}`); // Debugging: Check if post is already saved
+    console.log(`Existing save status: ${JSON.stringify(existingSaveStatus)}`);
 
-    // Update the save status and add to user's saved posts
     await SaveStatus.findOneAndUpdate(
       { user_id: userId, post_id: postId },
       { status: true },
       { upsert: true, new: true }
     );
 
-    console.log("Save status updated"); // Debugging: Save status update log
+    console.log("Save status updated");
 
     await User.findByIdAndUpdate(
       userId,
@@ -247,16 +238,14 @@ const savePost = async (req, res, next) => {
       { new: true }
     );
 
-    console.log("User savedPosts updated"); // Debugging: User's saved posts updated
+    console.log("User savedPosts updated");
 
-    // Fetch updated user data after saving the post
     const updatedUser = await User.findById(userId).populate("savedPosts");
 
-    console.log(`Updated user: ${JSON.stringify(updatedUser)}`); // Debugging: Check updated user data
+    console.log(`Updated user: ${JSON.stringify(updatedUser)}`);
 
-    // Only create the notification if the user is saving someone else's post
     if (post.author_id.toString() !== userId.toString()) {
-      console.log("Creating notification for save"); // Debugging: Notification creation log
+      console.log("Creating notification for save");
       const notification = new Notification({
         recipient: post.author_id,
         author: userId,
@@ -272,7 +261,7 @@ const savePost = async (req, res, next) => {
         notification,
       });
     } else {
-      console.log("Post saved without notification"); // Debugging: No notification created
+      console.log("Post saved without notification");
       return res.status(200).json({
         message: "Post saved successfully without notification",
         savedPosts: updatedUser.savedPosts,
@@ -284,35 +273,25 @@ const savePost = async (req, res, next) => {
   }
 };
 
-
-
-
-
-
-
-
 const getComments = async (req, res) => {
   const { postId } = req.params;
 
   try {
-    // Find the post and populate the user_id field in the comments with username and profile_picture
     const post = await Post.findById(postId).populate({
-      path: "comments.user_id", // Populate the user_id field in each comment
-      select: "username profile_picture", // Include both username and profile_picture
+      path: "comments.user_id",
+      select: "username profile_picture",
     });
 
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    // Format the comments array to include authorUsername and profilePicture
     const populatedComments = post.comments.map((comment) => ({
       ...comment._doc,
-      authorUsername: comment.user_id?.username || "Unknown", // Username of the comment author
-      profilePicture: comment.user_id?.profile_picture || "", // Profile picture of the comment author
+      authorUsername: comment.user_id?.username || "Unknown",
+      profilePicture: comment.user_id?.profile_picture || "",
     }));
 
-    // Send the populated comments as the response
     res.status(200).json({
       comments: populatedComments,
     });
@@ -323,7 +302,6 @@ const getComments = async (req, res) => {
       .json({ message: "An error occurred while fetching comments." });
   }
 };
-
 
 const editComment = async (req, res) => {
   const { postId, commentId, newContent } = req.body;

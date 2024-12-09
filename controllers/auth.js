@@ -419,7 +419,7 @@ const authorProfileDetails = async (req, res, next) => {
       user: {
         username: user.username,
         email: user.email,
-        profilePicture: user.profile_picture, // Ensure it matches your frontend
+        profilePicture: user.profile_picture,
         bio: user.bio,
         followers: user.followers.length,
         following: user.following.length,

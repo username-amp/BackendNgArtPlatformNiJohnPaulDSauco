@@ -20,40 +20,39 @@ const getNotifications = async (req, res) => {
     const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
       .limit(parsedLimit)
-      .populate("author", "username") // Populating author
-      .populate("post", "title _id image_url") // Populating the psot field
+      .populate("author", "username")
+      .populate("post", "title _id image_url")
       .exec();
 
     const formattedNotifications = notifications.map((notif) => {
       let message = "";
-      let url = ""; // Add a URL field
+      let url = "";
 
       switch (notif.type) {
         case "like":
-          message = `${notif.author?.username} liked your post`; // Including author's username
-          url = `/post/${notif.post?._id}`; // Using the populated `post._id` for the URL
+          message = `${notif.author?.username} liked your post`;
+          url = `/post/${notif.post?._id}`;
           break;
         case "comment":
-          message = `${notif.author?.username} commented on your post`; // Including author's username
-          url = `/post/${notif.post?._id}`; // Using the populated `post._id` for the URL
-          break;
+          message = `${notif.author?.username} commented on your post`;
+          url = `/post/${notif.post?._id}`;
         case "follow":
-          message = `${notif.author?.username} started following you`; // Including author's username
-          url = `/profile/${notif.author?._id}`; // Link to the author's profile
+          message = `${notif.author?.username} started following you`;
+          url = `/profile/${notif.author?._id}`;
           break;
         case "save":
-          message = `${notif.author?.username} saved your post`; // Including author's username
-          url = `/post/${notif.post?._id}`; // Using the populated `post._id` for the URL
+          message = `${notif.author?.username} saved your post`;
+          url = `/post/${notif.post?._id}`;
           break;
         default:
-          message = `${notif.author?.username} performed a new activity`; // Default message
-          url = "/"; // Default URL
+          message = `${notif.author?.username} performed a new activity`;
+          url = "/";
       }
 
       return {
         ...notif._doc,
         message,
-        url, // Include the URL in the formatted notification
+        url,
       };
     });
 
@@ -66,10 +65,6 @@ const getNotifications = async (req, res) => {
     res.status(500).json({ message: "An error occurred" });
   }
 };
-
-
-
-
 
 const markAsRead = async (req, res) => {
   const { notificationIds } = req.body;
