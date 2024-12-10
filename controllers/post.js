@@ -410,6 +410,21 @@ const checkCategoryUsage = async (req, res) => {
   }
 };
 
+const checkCategoryUsagetest = async (req, res) => {
+  const { categoryTitle } = req.query;
+
+  try {
+    const count = await Post.countDocuments({ categoryTitle });
+    res.status(200).json({ exists: count > 0 });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to check category usage",
+      error: error.message,
+    });
+  }
+};
+
+
 module.exports = {
   createPost,
   getAllPosts,
@@ -424,4 +439,5 @@ module.exports = {
   getAllPostsOfUserByUserId,
   getFilteredPosts,
   checkCategoryUsage,
+  checkCategoryUsagetest
 };
