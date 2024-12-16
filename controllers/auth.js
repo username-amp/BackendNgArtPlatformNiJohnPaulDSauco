@@ -66,7 +66,6 @@ const signin = async (req, res, next) => {
       });
     }
 
-  
     const match = await comparePassword(password, user.password);
     if (!match) {
       return res.status(401).json({ message: "Invalid Credentials" });
@@ -90,9 +89,6 @@ const signin = async (req, res, next) => {
     next(error);
   }
 };
-
-
-
 
 const verifyCode = async (req, res, next) => {
   try {
@@ -273,7 +269,6 @@ const changePassword = async (req, res, next) => {
   }
 };
 
-
 const getProfile = async (req, res, next) => {
   try {
     const { _id } = req.user;
@@ -295,7 +290,6 @@ const getProfile = async (req, res, next) => {
     next(error);
   }
 };
-
 
 const updateProfile = async (req, res, next) => {
   try {
@@ -321,7 +315,6 @@ const updateProfile = async (req, res, next) => {
       return;
     }
 
-    // Update user fields
     user.username = username || user.username;
     user.email = email || user.email;
     user.bio = bio || user.bio;
@@ -356,11 +349,6 @@ const updateProfile = async (req, res, next) => {
     next(error);
   }
 };
-
-
-
-
-
 
 const getProfileWithDetails = async (req, res, next) => {
   try {
@@ -431,8 +419,6 @@ const authorProfileDetails = async (req, res, next) => {
   }
 };
 
-
-
 module.exports = {
   signup,
   signin,
@@ -444,5 +430,5 @@ module.exports = {
   updateProfile,
   getProfile,
   getProfileWithDetails,
-  authorProfileDetails
+  authorProfileDetails,
 };
