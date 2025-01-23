@@ -30,6 +30,7 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
     httpOnly: true,
+    
   })
 );
 

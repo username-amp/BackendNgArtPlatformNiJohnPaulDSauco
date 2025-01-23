@@ -424,7 +424,6 @@ const checkCategoryUsagetest = async (req, res) => {
   }
 };
 
-
 module.exports = {
   createPost,
   getAllPosts,
@@ -439,5 +438,5 @@ module.exports = {
   getAllPostsOfUserByUserId,
   getFilteredPosts,
   checkCategoryUsage,
-  checkCategoryUsagetest
+  checkCategoryUsagetest,
 };
